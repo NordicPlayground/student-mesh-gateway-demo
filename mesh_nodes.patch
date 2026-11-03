@@ -1,0 +1,77 @@
+From 2e49cd8eb032a64ce790caa28455fae370e670cb Mon Sep 17 00:00:00 2001
+From: YoPotato80 <mathias.schiotz@hotmail.no>
+Date: Thu, 23 Jul 2026 14:19:15 +0200
+Subject: [PATCH] samples: bluetooth: mesh: add Remote Provisioning Server
+
+Enable CONFIG_BT_MESH_RPR_SRV and add the Remote Provisioning Server
+model to the primary element of the light_ctrl and light_dimmer samples.
+This lets each node act as a proxy for provisioning nearby unprovisioned
+devices that are out of the provisioner's direct radio range.
+---
+ samples/bluetooth/mesh/light_ctrl/prj.conf              | 6 ++++++
+ samples/bluetooth/mesh/light_ctrl/src/model_handler.c   | 1 +
+ samples/bluetooth/mesh/light_dimmer/prj.conf            | 6 ++++++
+ samples/bluetooth/mesh/light_dimmer/src/model_handler.c | 1 +
+ 4 files changed, 14 insertions(+)
+
+diff --git a/samples/bluetooth/mesh/light_ctrl/prj.conf b/samples/bluetooth/mesh/light_ctrl/prj.conf
+index ee2a5efc57..c3559a5620 100644
+--- a/samples/bluetooth/mesh/light_ctrl/prj.conf
++++ b/samples/bluetooth/mesh/light_ctrl/prj.conf
+@@ -55,6 +55,12 @@ CONFIG_BT_MESH_MODEL_EXTENSION_LIST_SIZE=18
+ # default. Therefore, allow up to 3 application key bindings per model instance.
+ CONFIG_BT_MESH_MODEL_KEY_COUNT=3
+ 
++# Remote Provisioning Server. Allows this node to act as a proxy for
++# provisioning nearby unprovisioned devices that are out of the provisioner's
++# direct radio range.
++CONFIG_BT_MESH_RPR_SRV=y
++CONFIG_MBEDTLS_PSA_KEY_SLOT_COUNT=32
++
+ # Bluetooth Mesh models
+ CONFIG_BT_MESH_LIGHT_CTRL_SRV=y
+ CONFIG_BT_MESH_LIGHT_CTRL_SRV_TIME_ON=3
+diff --git a/samples/bluetooth/mesh/light_ctrl/src/model_handler.c b/samples/bluetooth/mesh/light_ctrl/src/model_handler.c
+index 1b03747cd4..fd7e0f707c 100644
+--- a/samples/bluetooth/mesh/light_ctrl/src/model_handler.c
++++ b/samples/bluetooth/mesh/light_ctrl/src/model_handler.c
+@@ -243,6 +243,7 @@ static struct bt_mesh_elem elements[] = {
+ 		     BT_MESH_MODEL_LIST(
+ 			     BT_MESH_MODEL_CFG_SRV,
+ 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
++			     BT_MESH_MODEL_RPR_SRV,
+ 			     BT_MESH_MODEL_LIGHTNESS_SRV(
+ 					 &my_ctx.lightness_srv),
+ 			     BT_MESH_MODEL_SCENE_SRV(&scene_srv),
+diff --git a/samples/bluetooth/mesh/light_dimmer/prj.conf b/samples/bluetooth/mesh/light_dimmer/prj.conf
+index 025871e7b7..11fe52d2d1 100644
+--- a/samples/bluetooth/mesh/light_dimmer/prj.conf
++++ b/samples/bluetooth/mesh/light_dimmer/prj.conf
+@@ -52,6 +52,12 @@ CONFIG_BT_MESH_NLC_PERF_SCENE_SELECTOR=y
+ # default. Therefore, allow up to 3 application key bindings per model instance.
+ CONFIG_BT_MESH_MODEL_KEY_COUNT=3
+ 
++# Remote Provisioning Server. Allows this node to act as a proxy for
++# provisioning nearby unprovisioned devices that are out of the provisioner's
++# direct radio range.
++CONFIG_BT_MESH_RPR_SRV=y
++CONFIG_MBEDTLS_PSA_KEY_SLOT_COUNT=32
++
+ # Bluetooth Mesh models
+ CONFIG_BT_MESH_LVL_CLI=y
+ CONFIG_BT_MESH_ONOFF_CLI=y
+diff --git a/samples/bluetooth/mesh/light_dimmer/src/model_handler.c b/samples/bluetooth/mesh/light_dimmer/src/model_handler.c
+index 9039d0a2f7..810a881eb6 100644
+--- a/samples/bluetooth/mesh/light_dimmer/src/model_handler.c
++++ b/samples/bluetooth/mesh/light_dimmer/src/model_handler.c
+@@ -291,6 +291,7 @@ static struct bt_mesh_elem elements[] = {
+ 	BT_MESH_ELEM(1,
+ 		     BT_MESH_MODEL_LIST(BT_MESH_MODEL_CFG_SRV,
+ 					BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
++					BT_MESH_MODEL_RPR_SRV,
+ 					BT_MESH_MODEL_ONOFF_CLI(&dimmer.onoff_client),
+ 					BT_MESH_MODEL_LVL_CLI(&dimmer.lvl_client),
+ 					BT_MESH_MODEL_SCENE_CLI(&scene_btn.client)),
+-- 
+2.54.0.windows.1
+

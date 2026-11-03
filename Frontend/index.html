@@ -1,0 +1,354 @@
+<!--
+  Copyright (c) 2026 Nordic Semiconductor ASA
+
+  SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESI Cloud — Bluetooth Mesh Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/style.css" >
+  <!-- mesh_cdb.js defines the Mesh store script.js reads and writes, so it loads first. -->
+  <script src="static/mesh_cdb.js"></script>
+  <script src="static/script.js"></script>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Top bar ─────────────────────────────────────────────── -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-text">
+          <span class="brand-name">ESI&nbsp;Cloud</span>
+          <span class="brand-tag">Bluetooth&nbsp;Mesh Gateway</span>
+        </span>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="status-badge" id="statusBadge" style="display:none;"></span>
+        <button class="btn btn-outline" id="keysBtn" onclick="openKeysModal()"
+                title="Create subnets and the AppKeys bound to them">
+          Subnets and AppKeys
+        </button>
+        <button class="btn btn-outline" id="resetBtn" onclick="resetWebsite()"
+                title="Forget the saved network and return the website to its uninitialized state">
+          Reset
+        </button>
+        <span class="live" id="live" title="Real-time link to nRF Cloud">
+          <span class="live-dot" id="liveDot"></span>
+          <span class="live-text" id="liveStatus">Connecting…</span>
+        </span>
+        <button class="btn btn-primary" id="initBtn"
+                onclick="sendMessage('gtw init'); setStatus('pending', 'Initializing mesh');">
+          Initialize mesh
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Workspace ───────────────────────────────────────────── -->
+    <main class="workspace">
+
+      <!-- Primary column: add devices on top, then the mesh network -->
+      <section class="col col-main">
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Add devices</h2>
+              <p class="panel-sub">Discover and provision unprovisioned nodes</p>
+            </div>
+            <div class="head-actions">
+              <button class="btn-scan" id="scanBtn" onclick="toggleScan()">
+                <span class="scan-label">Scan</span>
+              </button>
+              <button class="btn-scan" id="scanRprBtn" onclick="toggleScanRpr()"
+                title="Remote-only scan via RPR relays (local beacons off) — forces RPR provisioning even when boards are in range">
+                <span class="scan-label">RPR scan</span>
+              </button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <span class="field-label">Unprovisioned devices</span>
+            <div class="device-list" id="deviceList">
+              <div class="no-devices">No unprovisioned devices found. Click Scan to start.</div>
+            </div>
+
+            <div class="provision-footer">
+              <div class="provision-config">
+                <div class="provision-field">
+                  <label for="provNetIdx">Net IDX</label>
+                  <input id="provNetIdx" type="number" min="0" step="1" value="0" />
+                </div>
+                <div class="provision-field">
+                  <label for="provAppIdx">App IDX</label>
+                  <input id="provAppIdx" type="number" min="0" step="1" value="0" />
+                </div>
+                <div class="provision-field">
+                  <label for="provGroup">Group</label>
+                  <div class="stepper-input">
+                    <input id="provGroup" type="text" placeholder="0xC001" value="0xC001" />
+                    <div class="stepper-buttons">
+                      <button type="button" id="provGroupUp" class="stepper-btn" tabindex="-1"
+                              aria-label="Increment group" onclick="stepGroup(1, 'provGroup')">▲</button>
+                      <button type="button" id="provGroupDown" class="stepper-btn" tabindex="-1"
+                              aria-label="Decrement group" onclick="stepGroup(-1, 'provGroup')">▼</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="provision-actions">
+                <button class="btn btn-autoprov" id="autoProvisionBtn" onclick="toggleAutoProvision()"
+                  title="Automatically provision new undiscovered devices, using chosen net/app/group">
+                  Auto-provision
+                </button>
+                <button class="btn btn-provision" id="provisionBtn" disabled onclick="provisionSelected()">
+                  Provision selected
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-grow">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Network</h2>
+              <p class="panel-sub">Provisioned nodes in the mesh</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="provisionedList">
+              <div class="no-devices">No provisioned devices yet.</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <div class="resizer" id="railResizer" role="separator" aria-orientation="vertical"
+           aria-label="Resize operations panel" tabindex="0"></div>
+
+      <!-- Operations rail -->
+      <aside class="col col-rail">
+
+        <div class="panel panel-console panel-grow">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Console</h2>
+              <p class="panel-sub">Live gateway messages &amp; shell</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="output">Waiting for messages…</div>
+            <label class="field-label" for="message">Send shell command to gateway</label>
+            <textarea id="message" placeholder="Type a command…">mesh models cfg get-comp</textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="sendBtn"
+                title="Send command to gateway — send 'gtw' to list gateway commands"
+                onclick="sendMessagebtn()">
+                Send command
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-grow panel-maint">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Maintenance</h2>
+              <p class="panel-sub">Key management &amp; Gateway replacement</p>
+            </div>
+          </div>
+          <div class="panel-body">
+
+            <div class="action-row">
+              <div class="action-item">
+                <label for="saveCdbBtn">Save Config DB</label>
+                <button class="btn btn-ghost" id="saveCdbBtn" onclick="sendMessage('gtw cdb')">Save</button>
+              </div>
+              <div class="action-item">
+                <label for="replaceNodeBtn">Replace Gateway node</label>
+                <button class="btn btn-ghost" id="replaceNodeBtn" title='Load the gateway configuration onto a new nRF54l15 board (not needed for nRF9151 since it has no memory)'
+                 onclick="replaceNode()">Replace</button>
+              </div>
+            </div>
+
+            <div class="action-item action-item-wide">
+              <label>Rotate keys — select keys to refresh</label>
+              <div class="keyrefresh-list" id="keyRefreshList">
+                <div class="no-devices">Save the Config DB to list keys.</div>
+              </div>
+              <button class="btn btn-ghost btn-danger" id="keyRefreshBtn"
+                onclick="keyRefresh()" title="Roll every selected key">
+                Key refresh
+              </button>
+            </div>
+
+            <div class="cdb-block">
+              <span class="field-label">Latest Config DB</span>
+              <div id="cdbOutput">No Config DB stored yet.</div>
+            </div>
+
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+  </div>
+
+  <!-- Network-wide keys, opened from the top bar: the subnets the mesh has and
+       the AppKeys bound to them. Anything node-scoped lives in #nodeModal,
+       which a node card opens. A <dialog> so Esc and the backdrop come free. -->
+  <dialog class="modal" id="keysModal" aria-labelledby="keysModalTitle">
+    <div class="modal-inner">
+
+      <div class="modal-head">
+        <div>
+          <h2 id="keysModalTitle">Subnets and AppKeys</h2>
+          <p class="panel-sub">Create a subnet, and the AppKeys bound to it</p>
+        </div>
+        <button class="modal-x" onclick="closeKeysModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="provision-config keys-config">
+          <div class="provision-field">
+            <label for="keyNetIdx">Net IDX</label>
+            <input id="keyNetIdx" type="number" min="0" step="1" value="1" />
+          </div>
+          <div class="provision-field">
+            <label for="keyAppIdx">App IDX</label>
+            <input id="keyAppIdx" type="number" min="0" step="1" value="1" />
+          </div>
+        </div>
+
+        <div class="keys-steps">
+          <button class="btn btn-ghost" id="addSubnetBtn" onclick="addSubnet()"
+            title="Creates the subnet on the gateway with a fresh NetKey">
+            Add subnet
+          </button>
+          <button class="btn btn-ghost" id="addAppKeyBtn" onclick="addAppKeyToSubnet()"
+            title="Creates the AppKey on that subnet, and binds the gateway's own models to it">
+            Add AppKey to subnet
+          </button>
+        </div>
+
+        <p class="keys-hint keys-note">
+          Note: subnets and app keys created here are only added to the gateway database.
+          They are not automatically added to any nodes.
+        </p>
+
+        <!-- The dialog covers the top bar's status badge, so it carries its own
+             copy of the latest status line (written by setStatus). -->
+        <div class="keys-status" id="keysStatus"></div>
+
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Per-node configuration, opened by pressing a node card. Every command in
+       here is addressed to that one node. -->
+  <dialog class="modal" id="nodeModal" aria-labelledby="nodeModalTitle">
+    <div class="modal-inner">
+
+      <div class="modal-head">
+        <div>
+          <h2 id="nodeModalTitle">Configure node</h2>
+          <p class="panel-sub" id="nodeModalSub"></p>
+        </div>
+        <button class="modal-x" onclick="closeNodeModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Two halves, each with the field its own buttons read: what subnets
+             the node holds on the left, what its models are configured against
+             on the right. -->
+        <div class="node-split">
+
+          <section class="node-col">
+            <h3 class="node-col-title">Subnet</h3>
+
+            <div class="provision-config node-col-fields">
+              <div class="provision-field">
+                <label for="nodeNetIdx">Net IDX</label>
+                <input id="nodeNetIdx" type="number" min="0" step="1" value="1" />
+              </div>
+            </div>
+
+            <button class="btn btn-ghost" id="nodeAddSubnetBtn" onclick="addSubnetToNode()"
+              title="Adds the selected subnet to this node, so it can be addressed over that subnet">
+              Add subnet to node
+            </button>
+            <button class="btn btn-ghost" id="nodeSetNetBtn" onclick="setNodeNet()"
+              title="Sends this node's commands on the selected subnet from now on. The node must already hold that
+               subnet">
+              change subnet used for sending commands
+            </button>
+            <div class="node-col-remove">
+              <button class="btn btn-ghost btn-danger" id="nodeDelSubnetBtn"
+                onclick="removeSubnetFromNode()"
+                title='Takes the selected subnet off this node, and with it every AppKey bound
+                 to that subnet. The subnet this node is currently addressed over cannot be
+                 removed — change subnet first'>
+                Remove subnet from node
+              </button>
+            </div>
+          </section>
+
+          <section class="node-col">
+            <h3 class="node-col-title">AppKey &amp; group</h3>
+
+            <div class="provision-config node-col-fields">
+              <div class="provision-field">
+                <label for="nodeAppIdx">App IDX</label>
+                <input id="nodeAppIdx" type="number" min="0" step="1" value="1" />
+              </div>
+              <div class="provision-field">
+                <label for="nodeGroup">Group</label>
+                <div class="stepper-input">
+                  <input id="nodeGroup" type="text" placeholder="0xC001" value="0xC001" />
+                  <div class="stepper-buttons">
+                    <button type="button" id="nodeGroupUp" class="stepper-btn" tabindex="-1"
+                            aria-label="Increment group" onclick="stepGroup(1, 'nodeGroup')">▲</button>
+                    <button type="button" id="nodeGroupDown" class="stepper-btn" tabindex="-1"
+                            aria-label="Decrement group" onclick="stepGroup(-1, 'nodeGroup')">▼</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-ghost" id="nodeCfgBtn" onclick="configureNodeWithAppKey()"
+              title='Binds the AppKey to this node and subscribes its models to the Group address and appkey.
+              The node will set its models to publish to the most recently added group address.'>
+              Configure with AppKey and group
+            </button>
+            <div class="node-col-remove">
+              <button class="btn btn-ghost btn-danger" id="nodeDelAppKeyBtn"
+                onclick="removeAppKeyFromNode()"
+                title="Takes the App IDX AppKey off this node, leaving its subnets alone">
+                Remove AppKey from node
+              </button>
+              <button class="btn btn-ghost btn-danger" id="nodeDelGroupBtn"
+                onclick="removeGroupFromNode()"
+                title="Unsubscribes the models on this node from the Group address and clears
+                 any publication aimed at it. Its AppKeys and subnets are left alone">
+                Remove group from node
+              </button>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>

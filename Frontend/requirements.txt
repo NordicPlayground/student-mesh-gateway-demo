@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Nordic Semiconductor ASA
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+
+Flask==3.0.3
+flask-cors==4.0.1
+requests==2.32.3
+gunicorn==22.0.0
+python-dotenv==1.0.1
+paho-mqtt==2.1.0
+

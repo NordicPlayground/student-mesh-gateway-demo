@@ -1,0 +1,62 @@
+/*
+ * Copyright (c) 2017 Intel Corporation
+ * Copyright (c) 2026 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/sys/printk.h>
+#include <zephyr/console/console.h>
+#include <zephyr/kernel.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <bluetooth/mesh/models.h>
+#include <bluetooth/mesh/dk_prov.h>
+#include <dk_buttons_and_leds.h>
+#include <zephyr/shell/shell.h>
+#include <zephyr/shell/shell_uart.h>
+#include <zephyr/shell/shell_dummy.h>
+#include <zephyr/bluetooth/mesh/shell.h>
+#include "model_handler.h"
+#include "init.h"
+#include "uart_cmd.h"
+#include "smp_bt.h"
+#include "provisioning.h"
+
+/*ADDED INCLUDES*/
+#include <zephyr/settings/settings.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/logging/log_backend.h>
+#include <zephyr/logging/log_output.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/sys/ring_buffer.h>
+#include <string.h>
+#include <stdio.h>
+
+#if defined(CONFIG_SETTINGS)
+#include <zephyr/settings/settings.h>
+#endif
+
+
+
+int main(void)
+{
+	int err;
+
+	printk("Initializing...\n");
+	err = bt_enable(bt_ready);
+	if (err && err != -EALREADY) {
+		printk("Bluetooth init failed (err %d)\n", err);
+	}
+	err = uart_cmd_init();
+	if (err) {
+		printk("UART command init failed (err %d)\n", err);
+	}
+	provisioning_init();
+	printk("Press the <Tab> button for supported commands.\n");
+	printk("Before any Mesh commands you must run \"mesh init\"\n");
+	printk("Ready to receive commands via UART...\n");
+	while (1) {
+		k_sleep(K_FOREVER);
+	}
+	return 0;
+}

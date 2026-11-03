@@ -1,0 +1,22 @@
+.env
+
+# --- PYTHON ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- VIRTUAL ENV ---
+.venv/
+.env/
+
+# --- OS FILES ---
+.DS_Store
+Thumbs.db
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- RUNTIME STATE ---
+# server.py cache of the last Config DB dump the gateway sent
+latest_cdb.txt

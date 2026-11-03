@@ -1,0 +1,25 @@
+nRF Cloud Gateway for Bluetooth Mesh Network (student-mesh-gateway-demo)
+
+Copyright (c) 2026, Nordic Semiconductor ASA
+
+This project is licensed under the Nordic Semiconductor 5-Clause License.
+See the LICENSE file in the repository root.
+
+Third-party and mixed licensing
+-------------------------------
+
+- nRF54L15_Gateway/src/main.c includes material from the Zephyr Project and
+  Intel Corporation and is SPDX-License-Identifier: Apache-2.0. Other Nordic
+  firmware files in this repository are LicenseRef-Nordic-5-Clause unless a file
+  header states otherwise.
+
+- Firmware is built with the nRF Connect SDK (NCS) and Zephyr RTOS. Those
+  components carry their own licenses when you fetch NCS as part of your build
+  environment.
+
+- The Frontend Python application uses packages declared in Frontend/requirements.txt
+  (Flask, requests, paho-mqtt, and others). Each package is subject to its
+  own license when installed via pip.
+
+- mesh_nodes.patch is intended to be applied to an NCS tree; the patched NCS
+  samples remain under their upstream licenses.

@@ -1,0 +1,6 @@
+{
+    "nrf-connect.applications": [
+        "${workspaceFolder}\\nRF54L15_Gateway",
+        "${workspaceFolder}\\nRF9151_Gateway"
+    ]
+}

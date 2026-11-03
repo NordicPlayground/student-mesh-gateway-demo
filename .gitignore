@@ -1,0 +1,25 @@
+# Patterns here have no internal slash, so they match at any depth — one rule
+# covers every app (nRF54L15_Gateway, nRF9151_Gateway, Mesh_node, Frontend).
+# Keep anything Python- or Frontend-specific in Frontend/.gitignore instead.
+
+# --- BUILD OUTPUT ---
+build/
+build_*/
+
+# account MQTT certificate caches (contain a private key)
+.mqtt_creds/
+.mqtt_creds_web/
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- OS FILES ---
+.DS_Store
+Thumbs.db
+
+# --- SECRETS ---
+.env
+.env.*
+!.env.example
+*.pem
